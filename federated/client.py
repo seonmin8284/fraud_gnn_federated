@@ -37,7 +37,11 @@ class FraudClient(NumPyClient):
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
 
+<<<<<<< HEAD
         for epoch in range(1):
+=======
+        for epoch in range(1):  # 간단하게 1 epoch만 (config로 조정 가능)
+>>>>>>> parent of 9a55bff (	modified:   federated/client.py)
             for data in self.loader:
                 data = data.to(DEVICE)
                 optimizer.zero_grad()
