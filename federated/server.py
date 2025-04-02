@@ -1,6 +1,6 @@
 # federated/server.py
 
-from flwr.server import start_supernode_server
+from flwr.server.supernode.api import start_supernode_server
 from flwr.server.strategy import FedAvg
 
 def start_server(server_address="0.0.0.0:9091", num_rounds=3):
