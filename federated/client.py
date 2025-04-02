@@ -8,9 +8,12 @@ from graph.gnn_model import GCN
 from graph.dataset import FraudGraphDataset
 from federated.utils import get_parameters, set_parameters
 
+from flwr.client import ClientApp, NumPyClient
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class FraudClient(fl.client.NumPyClient):
+
+class FraudClient(NumPyClient):
     def __init__(self, model, data_path):
         self.model = model.to(DEVICE)
         self.dataset = FraudGraphDataset(data_path)
@@ -28,7 +31,7 @@ class FraudClient(fl.client.NumPyClient):
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
 
-        for epoch in range(1):  # 간단하게 1 epoch만 (config로 조정 가능)
+        for epoch in range(1):  # 간단하게 1 epoch
             print(f"🌀 [Client] epoch {epoch} 시작")
             for data in self.loader:
                 data = data.to(DEVICE)
@@ -57,15 +60,21 @@ class FraudClient(fl.client.NumPyClient):
         return float(acc), len(self.dataset), {"accuracy": acc}
 
 
-def run_client(cid, data_path, server_addr="38.128.232.18:9091"):
-    # dummy data로 input_dim 추정
+# Flower에서 호출할 client_fn
+def client_fn(cid: str) -> NumPyClient:
+    data_path = f"data/preprocessed/client_{cid}.csv"
+
+    # 그래프의 input_dim 추정
     from graph.graph_utils import build_graph_from_df
     import pandas as pd
-    sample_df = pd.read_csv(data_path)
-    sample_data = build_graph_from_df(sample_df)
-    input_dim = sample_data.x.shape[1]
+
+    df = pd.read_csv(data_path)
+    graph_data = build_graph_from_df(df)
+    input_dim = graph_data.x.shape[1]
 
     model = GCN(in_channels=input_dim)
+    return FraudClient(model, data_path)
 
-    client = FraudClient(model, data_path)
-    fl.client.start_numpy_client(server_address=server_addr, client=client.to_client())
+
+# ClientApp 등록 (flower-supernode CLI에서 참조됨)
+app = ClientApp(client_fn)
