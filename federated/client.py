@@ -57,7 +57,7 @@ class FraudClient(fl.client.NumPyClient):
         return float(acc), len(self.dataset), {"accuracy": acc}
 
 
-def run_client(cid, data_path, server_addr="127.0.0.1:8080"):
+def run_client(cid, data_path, server_addr="38.128.232.18:9091"):
     # dummy data로 input_dim 추정
     from graph.graph_utils import build_graph_from_df
     import pandas as pd
@@ -68,4 +68,4 @@ def run_client(cid, data_path, server_addr="127.0.0.1:8080"):
     model = GCN(in_channels=input_dim)
 
     client = FraudClient(model, data_path)
-    fl.client.start_numpy_client(server_address=server_addr, client=client)
+    fl.client.start_numpy_client(server_address=server_addr, client=client.to_client())
