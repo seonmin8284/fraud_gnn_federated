@@ -1,0 +1,5 @@
+{
+    "executable": "python",
+    "args": ["-m", "federated.client_main", "--cid=0"]
+  }
+  
