@@ -18,6 +18,8 @@ class FraudGraphDataset(Dataset):
 
         # 그래프 데이터는 전체를 하나로 보므로 len은 1
         self.graph_data = build_graph_from_df(self.df)
+        
+        self._indices = None
 
     def len(self):
         return 1
