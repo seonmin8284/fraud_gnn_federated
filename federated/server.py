@@ -1,9 +1,9 @@
 # federated/server.py
 
-from flwr.server import Server
+from flwr.server import ServerApp, ServerConfig, ServerAppComponents
 from flwr.server.strategy import FedAvg
 
-def start_server(server_address="0.0.0.0:9091", num_rounds=3):
+def server_fn(server_address="0.0.0.0:9091", num_rounds=3):
     """
     Flower SuperNode 기반 연합학습 서버를 실행합니다.
     """
@@ -15,11 +15,11 @@ def start_server(server_address="0.0.0.0:9091", num_rounds=3):
         min_available_clients=1,
     )
 
-    Server(
-        server_address=server_address,
-        config={"num_rounds": num_rounds},
-        strategy=strategy,
-    )
+    # Construct ServerConfig
+    config = ServerConfig(num_rounds=num_rounds)
 
-if __name__ == "__main__":
-    start_server()
+    # Wrap everything into a `ServerAppComponents` object
+    return ServerAppComponents(strategy=strategy, config=config)
+
+
+server_app = ServerApp(server_fn=server_fn)
