@@ -1,18 +1,26 @@
 # federated/client.py
 
-import flwr as fl
+from collections import OrderedDict
+from typing import Dict, Tuple
 import torch
 import torch.nn.functional as F
 from torch_geometric.loader import DataLoader
+from flwr.common import NDArrays, Scalar, Context
+from flwr.client import NumPyClient, ClientApp
+
 from graph.gnn_model import GCN
 from graph.dataset import FraudGraphDataset
+from graph.graph_utils import build_graph_from_df
 from federated.utils import get_parameters, set_parameters
-from flwr.client import NumPyClient
+
+import pandas as pd
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
 class FraudClient(NumPyClient):
-    def __init__(self, model, data_path):
+    def __init__(self, model, data_path: str) -> None:
+        super().__init__()
         self.model = model.to(DEVICE)
         self.dataset = FraudGraphDataset(data_path)
         self.loader = DataLoader(self.dataset, batch_size=1)
@@ -23,7 +31,7 @@ class FraudClient(NumPyClient):
     def set_parameters(self, parameters):
         set_parameters(self.model, parameters)
 
-    def fit(self, parameters, config):
+    def fit(self, parameters: NDArrays, config: Dict[str, Scalar]):
         self.set_parameters(parameters)
         self.model.train()
 
@@ -37,9 +45,10 @@ class FraudClient(NumPyClient):
                 loss = F.cross_entropy(out, data.y)
                 loss.backward()
                 optimizer.step()
+
         return self.get_parameters(), len(self.dataset), {}
 
-    def evaluate(self, parameters, config):
+    def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]):
         self.set_parameters(parameters)
         self.model.eval()
 
@@ -55,15 +64,18 @@ class FraudClient(NumPyClient):
         acc = correct / total
         return float(acc), len(self.dataset), {"accuracy": acc}
 
-# 👉 client_fn은 그대로 유지
-def client_fn(cid: str) -> fl.client.NumPyClient:
-    import pandas as pd
-    from graph.graph_utils import build_graph_from_df
 
+# 👉 ClientApp 방식으로 변경
+def client_fn(context: Context) -> NumPyClient:
+    cid = context.node_config["partition_id"]
     data_path = f"data/preprocessed/client_{cid}.csv"
+
     df = pd.read_csv(data_path)
     graph_data = build_graph_from_df(df)
     input_dim = graph_data.x.shape[1]
 
     model = GCN(in_channels=input_dim)
-    return FraudClient(model, data_path)
+    return FraudClient(model, data_path).to_client()
+
+
+client_app = ClientApp(client_fn=client_fn)
