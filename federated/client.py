@@ -1,5 +1,5 @@
 # federated/client.py
-
+import argparse
 import flwr as fl
 import torch
 import torch.nn.functional as F
@@ -12,6 +12,9 @@ from flwr.client import ClientApp, NumPyClient
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--cid", type=str, required=True)
+args = parser.parse_args()
 
 class FraudClient(NumPyClient):
     def __init__(self, model, data_path):
@@ -61,7 +64,7 @@ class FraudClient(NumPyClient):
 
 
 # Flower에서 호출할 client_fn
-def client_fn(cid: str) -> NumPyClient:
+def client_fn(cid: str) -> fl.client.NumPyClient:
     data_path = f"data/preprocessed/client_{cid}.csv"
 
     # 그래프의 input_dim 추정
@@ -77,4 +80,4 @@ def client_fn(cid: str) -> NumPyClient:
 
 
 # ClientApp 등록 (flower-supernode CLI에서 참조됨)
-app = ClientApp(client_fn)
+app = ClientApp(lambda: client_fn(args.cid))
