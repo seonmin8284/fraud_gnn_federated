@@ -29,6 +29,7 @@ class FraudClient(fl.client.NumPyClient):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
 
         for epoch in range(1):  # 간단하게 1 epoch만 (config로 조정 가능)
+            print(f"🌀 [Client] epoch {epoch} 시작")
             for data in self.loader:
                 data = data.to(DEVICE)
                 optimizer.zero_grad()
@@ -36,7 +37,7 @@ class FraudClient(fl.client.NumPyClient):
                 loss = F.cross_entropy(out, data.y)
                 loss.backward()
                 optimizer.step()
-
+            print(f"✅ [Client] epoch {epoch} 종료")
         return self.get_parameters(), len(self.dataset), {}
 
     def evaluate(self, parameters, config):
